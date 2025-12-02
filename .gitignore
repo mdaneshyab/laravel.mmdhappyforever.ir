@@ -1,0 +1,23 @@
+# Laravel
+/vendor
+/node_modules
+/storage/*.key
+/storage/app/public
+/storage/framework/cache/data
+/storage/framework/sessions
+/storage/framework/views
+/storage/logs
+.env
+.env.backup
+.phpunit.result.cache
+
+# Composer
+composer.lock
+
+# NPM debug logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Docker
+mysql/data
