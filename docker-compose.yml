@@ -10,6 +10,16 @@ services:
     command: ["mysqld","--server_id=1","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON",
               "--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql",
               "--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
+    # Add persistent volumes
+    volumes:
+      - mysql-data-1:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
+      timeout: 10s
+      retries: 20
+      interval: 5s
+      start_period: 30s
+
   mysql-server-2:
     container_name: mysql-server-2
     env_file:
@@ -20,6 +30,15 @@ services:
               "--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
     ports:
       - "3302:3306"
+    volumes:
+      - mysql-data-2:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
+      timeout: 10s
+      retries: 20
+      interval: 5s
+      start_period: 30s
+
   mysql-server-3:
     container_name: mysql-server-3
     env_file:
@@ -30,14 +49,21 @@ services:
               "--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
     ports:
       - "3303:3306"
-  
+    volumes:
+      - mysql-data-3:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
+      timeout: 10s
+      retries: 20
+      interval: 5s
+      start_period: 30s
+
   mysql-shell:
     container_name: mysql-shell
-    env_file:
-      - ./mysql/mysql-shell.env
-    image: neumayer/mysql-shell-batch
+    image: mysql/mysql-server:8.0.12
     volumes:
         - ./mysql/scripts/:/scripts/
+    command: ["mysqlsh", "--file", "scripts/setupCluster.js"]
     depends_on:
       mysql-server-1:
         condition: service_healthy
@@ -45,7 +71,8 @@ services:
         condition: service_healthy
       mysql-server-3:
         condition: service_healthy
-  
+
+
   mysql-router:
     container_name: mysql-router
     env_file:
@@ -54,12 +81,10 @@ services:
     ports:
       - "6446:6446"
     depends_on:
-      - mysql-server-1
-      - mysql-server-2
-      - mysql-server-3
-      - mysql-shell
+      mysql-shell:
+        condition: service_completed_successfully
     restart: on-failure
-  
+
   phpmyadmin:
     container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
@@ -68,9 +93,15 @@ services:
     environment:
       PMA_HOST: mysql-router
       PMA_PORT: 6446
-      PMA_USER: dbwebapp
-      PMA_PASSWORD: dbwebapp
-      UPLOAD_LIMIT: 100M
+      PMA_USER: root
+      PMA_PASSWORD: mysql
     depends_on:
       - mysql-router
+        
     restart: unless-stopped
+
+# Define volumes for persistence
+volumes:
+  mysql-data-1:
+  mysql-data-2:
+  mysql-data-3:
