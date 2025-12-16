@@ -1,15 +1,13 @@
-version: '3'
+
 services:
   mysql-server-1:
     container_name: mysql-server-1
     env_file:
       - ./mysql/mysql-server.env
-    image: mysql/mysql-server:8.0.12
+    image: mysql:8.4.7
     ports:
       - "3301:3306"
-    command: ["mysqld","--server_id=1","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON",
-              "--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql",
-              "--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
+    command: ["mysqld","--server_id=1","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
     # Add persistent volumes
     volumes:
       - mysql-data-1:/var/lib/mysql
@@ -24,10 +22,8 @@ services:
     container_name: mysql-server-2
     env_file:
       - ./mysql/mysql-server.env
-    image: mysql/mysql-server:8.0.12
-    command: ["mysqld","--server_id=2","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON",
-              "--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql",
-              "--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
+    image: mysql:8.4.7
+    command: ["mysqld","--server_id=2","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
     ports:
       - "3302:3306"
     volumes:
@@ -43,10 +39,8 @@ services:
     container_name: mysql-server-3
     env_file:
       - ./mysql/mysql-server.env
-    image: mysql/mysql-server:8.0.12
-    command: ["mysqld","--server_id=3","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON",
-              "--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql",
-              "--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
+    image: mysql:8.4.7
+    command: ["mysqld","--server_id=3","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
     ports:
       - "3303:3306"
     volumes:
@@ -60,10 +54,12 @@ services:
 
   mysql-shell:
     container_name: mysql-shell
-    image: mysql/mysql-server:8.0.12
+    image: mysql:8.4.7
+    env_file:
+      - ./mysql/mysql-server.env
     volumes:
         - ./mysql/scripts/:/scripts/
-    command: ["mysqlsh", "--file", "scripts/setupCluster.js"]
+    command: ["mysqld","--server_id=4","mysqlsh" , "-uroot","-pmysql"] #,"--file", "scripts/setupCluster.js"]
     depends_on:
       mysql-server-1:
         condition: service_healthy
