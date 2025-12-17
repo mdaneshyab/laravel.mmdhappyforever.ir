@@ -1,4 +1,3 @@
-
 services:
   mysql-server-1:
     container_name: mysql-server-1
@@ -8,7 +7,6 @@ services:
     ports:
       - "3301:3306"
     command: ["mysqld","--server_id=1","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
-    # Add persistent volumes
     volumes:
       - mysql-data-1:/var/lib/mysql
     healthcheck:
@@ -55,11 +53,10 @@ services:
   mysql-shell:
     container_name: mysql-shell
     image: mysql:8.4.7
-    env_file:
-      - ./mysql/mysql-server.env
     volumes:
-        - ./mysql/scripts/:/scripts/
-    command: ["mysqld","--server_id=4","mysqlsh" , "-uroot","-pmysql"] #,"--file", "scripts/setupCluster.js"]
+      - ./mysql/shell:/scripts
+    command:
+      ["mysqlsh","-h","mysql-server-1","-uroot","-pmysql","--file","/scripts/SetupCluster.js"]
     depends_on:
       mysql-server-1:
         condition: service_healthy
@@ -70,15 +67,22 @@ services:
 
 
   mysql-router:
+    image: container-registry.oracle.com/mysql/community-router:8.4.7
     container_name: mysql-router
+    ports:
+      - "6446:6446"   # Read/Write port
+      - "6447:6447"   # Read-Only port
+      - "6448:6448"   # Classic MySQL protocol port
+      - "8443:8443"   # HTTP port for REST API
     env_file:
       - ./mysql/mysql-router.env
-    image: mysql/mysql-router:8.0
-    ports:
-      - "6446:6446"
     depends_on:
-      mysql-shell:
-        condition: service_completed_successfully
+      mysql-server-1:
+        condition: service_healthy
+      mysql-server-2:
+        condition: service_healthy
+      mysql-server-3:
+        condition: service_healthy
     restart: on-failure
 
   phpmyadmin:

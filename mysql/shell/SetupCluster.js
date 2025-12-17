@@ -1,6 +1,4 @@
 
-var dbPass = "mysql"
-var clusterName = "devCluster"
 
 try {
 
@@ -12,12 +10,13 @@ try {
   dba.configureInstance({user: "root", host: "mysql-server-2", password: "mysql"})
   dba.configureInstance({user: "root", host: "mysql-server-3", password: "mysql"})
   
-  shell.connect('root@mysql-server-1:3306', dbPass)
-  var cluster = dba.createCluster(clusterName);
   print('Adding instances to the cluster.');
-  cluster.addInstance({user: "root", host: "mysql-server-2", password: dbPass})
+  var cluster = dba.createCluster("devCluster");
+  cluster.addInstance({user: "root", host: "mysql-server-2", password: "mysql"},{recoveryMethod: "clone"});
+  cluster.rescan()
   print('.');
-  cluster.addInstance({user: "root", host: "mysql-server-3", password: dbPass})
+  cluster.addInstance({user: "root", host: "mysql-server-3", password: "mysql"},{recoveryMethod: "clone"});
+  cluster.rescan()
   print('.\nInstances successfully added to the cluster.');
   print('\nInnoDB cluster deployed successfully.\n');
 } catch(e) {
