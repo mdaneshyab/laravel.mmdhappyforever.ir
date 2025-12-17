@@ -9,6 +9,7 @@ services:
     command: ["mysqld","--server_id=1","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
     volumes:
       - mysql-data-1:/var/lib/mysql
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
       timeout: 10s
@@ -26,6 +27,7 @@ services:
       - "3302:3306"
     volumes:
       - mysql-data-2:/var/lib/mysql
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
       timeout: 10s
@@ -43,6 +45,7 @@ services:
       - "3303:3306"
     volumes:
       - mysql-data-3:/var/lib/mysql
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmysql"]
       timeout: 10s
