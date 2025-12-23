@@ -68,8 +68,8 @@ services:
         condition: service_healthy
       mysql-server-3:
         condition: service_healthy
-    command:
-      ["mysqlsh","-h","mysql-server-1","-uroot","-pmysql","--file","/scripts/SetupCluster.js"]
+    command: >
+      sh -c "chmod +x /scripts/entrypoint.sh && exec /scripts/entrypoint.sh"
 
 
   mysql-router:
