@@ -6,7 +6,8 @@ services:
     image: mysql:8.4.7
     ports:
       - "3301:3306"
-    command: ["mysqld","--server_id=1","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
+    command: ["mysqld","--server_id=1","--gtid_mode=ON","--enforce_gtid_consistency=ON",
+              "--report_host=mysql-server-1","--loose-group_replication_local_address=mysql-server-1:33061"]
     volumes:
       - mysql-data-1:/var/lib/mysql
     restart: unless-stopped
@@ -22,7 +23,8 @@ services:
     env_file:
       - ./mysql/mysql-server.env
     image: mysql:8.4.7
-    command: ["mysqld","--server_id=2","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
+    command: ["mysqld","--server_id=2","--gtid_mode=ON","--enforce_gtid_consistency=ON",
+              "--report_host=mysql-server-2","--loose-group_replication_local_address=mysql-server-2:33061"]
     ports:
       - "3302:3306"
     volumes:
@@ -40,7 +42,8 @@ services:
     env_file:
       - ./mysql/mysql-server.env
     image: mysql:8.4.7
-    command: ["mysqld","--server_id=3","--gtid_mode=ON","--enforce_gtid_consistency=ON"]
+    command: ["mysqld","--server_id=3","--gtid_mode=ON","--enforce_gtid_consistency=ON",
+              "--report_host=mysql-server-3","--loose-group_replication_local_address=mysql-server-3:33061"]
     ports:
       - "3303:3306"
     volumes:
@@ -58,8 +61,6 @@ services:
     image: mysql:8.4.7
     volumes:
       - ./mysql/shell:/scripts
-    command:
-      ["mysqlsh","-h","mysql-server-1","-uroot","-pmysql","--file","/scripts/SetupCluster.js"]
     depends_on:
       mysql-server-1:
         condition: service_healthy
@@ -67,6 +68,8 @@ services:
         condition: service_healthy
       mysql-server-3:
         condition: service_healthy
+    command:
+      ["mysqlsh","-h","mysql-server-1","-uroot","-pmysql","--file","/scripts/SetupCluster.js"]
 
 
   mysql-router:
@@ -76,7 +79,6 @@ services:
       - "6446:6446"   # Read/Write port
       - "6447:6447"   # Read-Only port
       - "6448:6448"   # Classic MySQL protocol port
-      - "8443:8443"   # HTTP port for REST API
     env_file:
       - ./mysql/mysql-router.env
     depends_on:
