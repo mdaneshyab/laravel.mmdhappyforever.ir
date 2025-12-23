@@ -94,7 +94,7 @@ services:
     container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
     ports:
-      - "80:80"
+      - "81:80"
     environment:
       PMA_HOST: mysql-router
       PMA_PORT: 6446
