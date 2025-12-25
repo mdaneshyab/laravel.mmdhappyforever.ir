@@ -101,12 +101,31 @@ services:
       PMA_USER: root
       PMA_PASSWORD: mysql
     depends_on:
-      - mysql-router
-        
+      - mysql-router    
     restart: unless-stopped
+  
+  akaunting:
+    container_name: akaunting
+    image: docker.io/akaunting/akaunting:latest
+    build:
+      context: ./akaunting
+    ports:
+      - 80:80
+    volumes:
+      - akaunting-data:/var/www/html
+    restart: unless-stopped
+    env_file:
+      - ./akaunting/env/run.env
+    environment:
+      - AKAUNTING_SETUP
+    depends_on:
+      - mysql-router
+
+
 
 # Define volumes for persistence
 volumes:
   mysql-data-1:
   mysql-data-2:
   mysql-data-3:
+  akaunting-data:
