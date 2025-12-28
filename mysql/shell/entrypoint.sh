@@ -1,53 +1,25 @@
 #!/bin/sh
 set -e
 
-echo "Waiting for MySQL to accept TCP connections..."
-
-until mysqladmin ping \
-  -h mysql-server-1 \
-  -P 3306 \
-  -u root \
-  -pmysql \
-  --silent
-do
+echo "Waiting for mysql-server-1 to accept connections..."
+until mysqladmin ping -h mysql-server-1 -P 3306 -u root -pmysql --silent; do
   sleep 2
 done
 
-echo "MySQL is ready. Running mysqlsh script..."
+echo "mysql-server-1 is up. Running SetupCluster.js..."
+mysqlsh --js -h mysql-server-1 -P 3306 -u root -pmysql --file /scripts/SetupCluster.js
 
-mysqlsh \
-  --js \
-  -h mysql-server-1 \
-  -P 3306 \
-  -u root \
-  -pmysql \
-  --file /scripts/SetupCluster.js
+echo "Cluster setup finished. Creating ninja DB/user on mysql-server-1 (no router)..."
 
-echo "Cluster setup complete. Waiting for MySQL Router..."
-
-# Wait for mysql-router to be ready
-until mysqladmin ping \
-  -h mysql-router \
-  -P 6446 \
-  -u root \
-  -pmysql \
-  --silent
-do
-  echo "Waiting for mysql-router to be ready..."
-  sleep 5
+# Sometimes right after cluster setup the node may need a moment to be ready for writes.
+until mysql -h mysql-server-1 -P 3306 -u root -pmysql -e "
+CREATE DATABASE IF NOT EXISTS ninja CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'ninja'@'%' IDENTIFIED BY 'ninja';
+GRANT ALL PRIVILEGES ON ninja.* TO 'ninja'@'%';
+FLUSH PRIVILEGES;
+" ; do
+  echo "DB not ready yet, retrying..."
+  sleep 3
 done
 
-echo "MySQL Router is ready. Creating ninja database..."
-
-# Create database through the router
-mysql \
-  -h mysql-router \
-  -P 6446 \
-  -u root \
-  -pmysql \
-  -e "CREATE DATABASE IF NOT EXISTS ninja CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
-      CREATE USER IF NOT EXISTS 'ninja'@'%' IDENTIFIED BY 'ninja'; \
-      GRANT ALL PRIVILEGES ON ninja.* TO 'ninja'@'%'; \
-      FLUSH PRIVILEGES;"
-
-echo "ninja databases and user created successfully."
+echo "ninja database and user created successfully."

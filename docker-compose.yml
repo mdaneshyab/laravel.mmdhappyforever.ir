@@ -23,10 +23,10 @@ services:
     env_file:
       - ./mysql/mysql-server.env
     image: mysql:8.4.7
-    command: ["mysqld","--server_id=2","--gtid_mode=ON","--enforce_gtid_consistency=ON",
-              "--report_host=mysql-server-2","--loose-group_replication_local_address=mysql-server-2:33061"]
     ports:
       - "3302:3306"
+    command: ["mysqld","--server_id=2","--gtid_mode=ON","--enforce_gtid_consistency=ON",
+              "--report_host=mysql-server-2","--loose-group_replication_local_address=mysql-server-2:33061"]
     volumes:
       - mysql-data-2:/var/lib/mysql
     restart: unless-stopped
@@ -42,10 +42,10 @@ services:
     env_file:
       - ./mysql/mysql-server.env
     image: mysql:8.4.7
-    command: ["mysqld","--server_id=3","--gtid_mode=ON","--enforce_gtid_consistency=ON",
-              "--report_host=mysql-server-3","--loose-group_replication_local_address=mysql-server-3:33061"]
     ports:
       - "3303:3306"
+    command: ["mysqld","--server_id=3","--gtid_mode=ON","--enforce_gtid_consistency=ON",
+              "--report_host=mysql-server-3","--loose-group_replication_local_address=mysql-server-3:33061"]
     volumes:
       - mysql-data-3:/var/lib/mysql
     restart: unless-stopped
@@ -56,6 +56,7 @@ services:
       interval: 5s
       start_period: 15s
 
+  # 3) mysql-shell runs once, sets up cluster + creates ninja DB/user, then exits 0
   mysql-shell:
     container_name: mysql-shell
     image: mysql:8.4.7
@@ -68,9 +69,11 @@ services:
         condition: service_healthy
       mysql-server-3:
         condition: service_healthy
+    restart: "no"
     command: >
       sh -c "chmod +x /scripts/entrypoint.sh && exec /scripts/entrypoint.sh"
 
+  # 4) mysql-router starts only after mysql-shell completes successfully
   mysql-router:
     image: container-registry.oracle.com/mysql/community-router:8.4.7
     container_name: mysql-router
@@ -81,20 +84,18 @@ services:
     env_file:
       - ./mysql/mysql-router.env
     depends_on:
-      mysql-server-1:
-        condition: service_healthy
-      mysql-server-2:
-        condition: service_healthy
-      mysql-server-3:
-        condition: service_healthy
+      mysql-shell:
+        condition: service_completed_successfully
     restart: on-failure
+    # Use a TCP check so we don't depend on mysqladmin existing in the router image
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -P 6446 -uroot -pmysql --silent"]
+      test: ["CMD-SHELL", "sh -c 'echo > /dev/tcp/127.0.0.1/6446'"]
       interval: 5s
       timeout: 5s
-      retries: 30
+      retries: 60
       start_period: 10s
 
+  # 5) phpmyadmin after router healthy
   phpmyadmin:
     container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin
@@ -107,9 +108,10 @@ services:
       PMA_PASSWORD: mysql
     depends_on:
       mysql-router:
-        condition: service_healthy   
+        condition: service_healthy
     restart: unless-stopped
 
+  # 6) invoiceninja after router healthy
   invoiceninja:
     container_name: invoiceninja
     build:
@@ -124,9 +126,8 @@ services:
     depends_on:
       mysql-router:
         condition: service_healthy
-      # redis:
-      #   condition: service_healthy
-  
+
+  # 7) nginx after invoiceninja starts
   nginx:
     container_name: nginx
     image: nginx:alpine
@@ -139,20 +140,8 @@ services:
       - invoiceninja_storage:/var/www/html/storage:ro
     depends_on:
       invoiceninja:
-        condition: service_healthy
-    
-  # redis:
-  #   container_name: redis
-  #   image: redis:alpine
-  #   restart: unless-stopped
-  #   volumes:
-  #     - redis_data:/data
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
+        condition: service_started
 
-
-
-# Define volumes for persistence
 volumes:
   mysql-data-1:
   mysql-data-2:
@@ -160,8 +149,6 @@ volumes:
   invoiceninja_public:
     driver: local
   invoiceninja_storage:
-    driver: local
-  redis_data:
     driver: local
 
 networks:
