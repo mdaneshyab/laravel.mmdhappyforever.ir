@@ -7,7 +7,8 @@ services:
     ports:
       - "3301:3306"
     command: ["mysqld","--server_id=1","--gtid_mode=ON","--enforce_gtid_consistency=ON",
-              "--report_host=mysql-server-1","--loose-group_replication_local_address=mysql-server-1:33061"]
+              "--report_host=mysql-server-1","--loose-group_replication_local_address=mysql-server-1:33061",
+              "--sql_generate_invisible_primary_key=ON"]
     volumes:
       - mysql-data-1:/var/lib/mysql
     restart: unless-stopped
@@ -26,7 +27,8 @@ services:
     ports:
       - "3302:3306"
     command: ["mysqld","--server_id=2","--gtid_mode=ON","--enforce_gtid_consistency=ON",
-              "--report_host=mysql-server-2","--loose-group_replication_local_address=mysql-server-2:33061"]
+              "--report_host=mysql-server-2","--loose-group_replication_local_address=mysql-server-2:33061",
+              "--sql_generate_invisible_primary_key=ON"]
     volumes:
       - mysql-data-2:/var/lib/mysql
     restart: unless-stopped
@@ -45,7 +47,8 @@ services:
     ports:
       - "3303:3306"
     command: ["mysqld","--server_id=3","--gtid_mode=ON","--enforce_gtid_consistency=ON",
-              "--report_host=mysql-server-3","--loose-group_replication_local_address=mysql-server-3:33061"]
+              "--report_host=mysql-server-3","--loose-group_replication_local_address=mysql-server-3:33061",
+              "--sql_generate_invisible_primary_key=ON"]
     volumes:
       - mysql-data-3:/var/lib/mysql
     restart: unless-stopped
