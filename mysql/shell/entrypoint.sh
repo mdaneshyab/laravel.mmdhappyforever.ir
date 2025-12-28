@@ -37,7 +37,7 @@ do
   sleep 5
 done
 
-echo "MySQL Router is ready. Creating Akaunting database..."
+echo "MySQL Router is ready. Creating ninja database..."
 
 # Create database through the router
 mysql \
@@ -45,9 +45,9 @@ mysql \
   -P 6446 \
   -u root \
   -pmysql \
-  -e "CREATE DATABASE IF NOT EXISTS akaunting CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
-      CREATE USER IF NOT EXISTS 'akaunting'@'%' IDENTIFIED BY 'akaunting_password'; \
-      GRANT ALL PRIVILEGES ON akaunting.* TO 'akaunting'@'%'; \
+  -e "CREATE DATABASE IF NOT EXISTS ninja CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
+      CREATE USER IF NOT EXISTS 'ninja'@'%' IDENTIFIED BY 'ninja'; \
+      GRANT ALL PRIVILEGES ON ninja.* TO 'ninja'@'%'; \
       FLUSH PRIVILEGES;"
 
-echo "Akaunting databases and user created successfully."
+echo "ninja databases and user created successfully."

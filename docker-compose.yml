@@ -16,7 +16,7 @@ services:
       timeout: 10s
       retries: 20
       interval: 5s
-      start_period: 30s
+      start_period: 15s
 
   mysql-server-2:
     container_name: mysql-server-2
@@ -35,7 +35,7 @@ services:
       timeout: 10s
       retries: 20
       interval: 5s
-      start_period: 30s
+      start_period: 15s
 
   mysql-server-3:
     container_name: mysql-server-3
@@ -54,7 +54,7 @@ services:
       timeout: 10s
       retries: 20
       interval: 5s
-      start_period: 30s
+      start_period: 15s
 
   mysql-shell:
     container_name: mysql-shell
@@ -88,6 +88,12 @@ services:
       mysql-server-3:
         condition: service_healthy
     restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -P 6446 -uroot -pmysql --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
 
   phpmyadmin:
     container_name: phpmyadmin
@@ -100,13 +106,64 @@ services:
       PMA_USER: root
       PMA_PASSWORD: mysql
     depends_on:
-      - mysql-router    
+      mysql-router:
+        condition: service_healthy   
     restart: unless-stopped
+
+  invoiceninja:
+    container_name: invoiceninja
+    build:
+      context: ./invoiceninja
+    image: invoiceninja/invoiceninja-debian:latest
+    restart: unless-stopped
+    env_file:
+      - ./invoiceninja/.env
+    volumes:
+      - invoiceninja_public:/var/www/html/public
+      - invoiceninja_storage:/var/www/html/storage
+    depends_on:
+      mysql-router:
+        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
   
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./invoiceninja/nginx:/etc/nginx/conf.d:ro
+      - invoiceninja_public:/var/www/html/public:ro
+      - invoiceninja_storage:/var/www/html/storage:ro
+    depends_on:
+      invoiceninja:
+        condition: service_healthy
+    
+  # redis:
+  #   container_name: redis
+  #   image: redis:alpine
+  #   restart: unless-stopped
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+
+
 
 # Define volumes for persistence
 volumes:
   mysql-data-1:
   mysql-data-2:
   mysql-data-3:
+  invoiceninja_public:
+    driver: local
+  invoiceninja_storage:
+    driver: local
+  redis_data:
+    driver: local
 
+networks:
+  default:
+    name: laravelmmdhappyforeverir_network
